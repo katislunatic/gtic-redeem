@@ -18,16 +18,10 @@
             overflow: hidden; 
         }
         
-        /* Logo Animation Container */
         .logo-container { position: relative; width: 180px; height: 180px; margin: 0 auto 30px; }
         .logo-half { position: absolute; width: 100%; height: 100%; transition: 1.5s cubic-bezier(0.19, 1, 0.22, 1); opacity: 0; }
-        
-        /* The Left Half: Slides from far left */
         #logo-l { clip-path: inset(0 50% 0 0); transform: translateX(-400px); }
-        /* The Right Half: Slides from far right */
         #logo-r { clip-path: inset(0 0 0 50%); transform: translateX(400px); }
-        
-        /* Class triggered by JS to make them meet in the middle */
         .assembled { transform: translateX(0) !important; opacity: 1 !important; }
 
         .card { 
@@ -41,8 +35,24 @@
             box-shadow: 0 10px 30px rgba(0,0,0,0.5);
         }
 
-        h1 { font-weight: 800; letter-spacing: 2px; margin-bottom: 30px; font-size: 1.5rem; color: #5865F2; }
+        h1 { font-weight: 800; letter-spacing: 2px; margin-bottom: 20px; font-size: 1.5rem; color: #5865F2; }
         
+        /* Discord Button Styling */
+        .discord-btn {
+            background-color: #5865F2;
+            color: white;
+            padding: 12px 20px;
+            border-radius: 12px;
+            text-decoration: none;
+            font-weight: bold;
+            display: inline-block;
+            width: 80%;
+            margin-bottom: 20px;
+            transition: 0.3s;
+            font-size: 0.9rem;
+        }
+        .discord-btn:hover { background-color: #4752c4; transform: scale(1.02); }
+
         input { 
             background: #000; 
             border: 2px solid #333; 
@@ -55,11 +65,10 @@
             margin-bottom: 25px; 
             transition: 0.3s; 
         }
-        
         input:focus { border-color: #5865F2; outline: none; box-shadow: 0 0 10px rgba(88, 101, 242, 0.4); }
         
-        button { 
-            background: #5865F2; 
+        button#redeem-btn { 
+            background: #43b581; /* Green for claim */
             color: white; 
             border: none; 
             padding: 15px 45px; 
@@ -70,19 +79,15 @@
             width: 90%; 
             font-size: 1rem;
         }
-        
-        button:hover { background: #4752c4; transform: scale(1.02); }
-        button:active { transform: scale(0.98); }
+        button#redeem-btn:hover { background: #3ca374; transform: scale(1.02); }
+        button#redeem-btn:disabled { background: #333; cursor: not-allowed; }
 
-        #msg { margin-top: 20px; font-weight: bold; min-height: 20px; transition: 0.3s; }
+        #msg { margin-top: 20px; font-weight: bold; min-height: 20px; transition: 0.3s; font-size: 0.9rem;}
 
-        /* Legendary Shake Effect */
         .shake { animation: shakeAnim 0.3s infinite; }
         @keyframes shakeAnim { 
-            0% { transform: translate(1px, 1px); } 
-            25% { transform: translate(-2px, -1px); } 
-            50% { transform: translate(1px, -1px); }
-            75% { transform: translate(-1px, 1px); }
+            0% { transform: translate(1px, 1px); } 25% { transform: translate(-2px, -1px); } 
+            50% { transform: translate(1px, -1px); } 75% { transform: translate(-1px, 1px); }
             100% { transform: translate(1px, 1px); } 
         }
     </style>
@@ -96,30 +101,77 @@
         
         <div class="card" id="card">
             <h1>REDEEM CODE</h1>
+
+            <a href="https://discord.com/oauth2/authorize?client_id=1412560943493419070&response_type=code&redirect_uri=https%3A%2F%2Fandre-battailous-sickerly.ngrok-free.dev&scope=identify" class="discord-btn" id="login-btn">
+                1. CONNECT DISCORD
+            </a>
+
+            <div id="status-text" style="margin-bottom: 15px; font-size: 0.8rem; color: #aaa;">Not connected</div>
+
             <input type="text" id="code-input" placeholder="GTIC-XXXX-XXXX">
             <br>
-            <button id="redeem-btn" onclick="handleRedeem()">CLAIM REWARD</button>
+            <button id="redeem-btn" onclick="handleRedeem()">2. CLAIM REWARD</button>
             <p id="msg"></p>
         </div>
     </div>
 
     <script>
-        // Trigger logo assembly animation on load
         window.onload = () => {
+            // Logo Animation
             setTimeout(() => {
                 document.getElementById('logo-l').classList.add('assembled');
                 document.getElementById('logo-r').classList.add('assembled');
             }, 300);
+
+            // Handle Discord OAuth2 Redirect
+            const fragment = new URLSearchParams(window.location.hash.slice(1));
+            const accessToken = fragment.get('access_token');
+
+            if (accessToken) {
+                document.getElementById('status-text').innerText = "Verifying account...";
+                
+                fetch('https://discord.com/api/users/@me', {
+                    headers: { authorization: `Bearer ${accessToken}` }
+                })
+                .then(res => res.json())
+                .then(user => {
+                    if (user.id) {
+                        localStorage.setItem('discord_user_id', user.id);
+                        document.getElementById('status-text').innerText = `Connected as: ${user.username}`;
+                        document.getElementById('status-text').style.color = "#43b581";
+                        document.getElementById('login-btn').innerText = "ACCOUNT CONNECTED";
+                        document.getElementById('login-btn').style.backgroundColor = "#333";
+                        
+                        // Clean URL
+                        window.history.replaceState({}, document.title, "/");
+                    }
+                })
+                .catch(err => {
+                    console.error(err);
+                    document.getElementById('status-text').innerText = "Login failed. Try again.";
+                });
+            } else {
+                // Check if already logged in from previous session
+                const savedId = localStorage.getItem('discord_user_id');
+                if (savedId) {
+                    document.getElementById('status-text').innerText = "Session Active (Connected)";
+                }
+            }
         };
 
         async function handleRedeem() {
             const codeInput = document.getElementById('code-input');
             const msg = document.getElementById('msg');
             const btn = document.getElementById('redeem-btn');
-            const card = document.getElementById('card');
             
-            // !! REPLACE THIS WITH YOUR USER ID FOR TESTING !!
-            const testUserId = "1252981295454224390"; 
+            // Gets ID from the Discord login
+            const userId = localStorage.getItem('discord_user_id');
+
+            if (!userId) {
+                msg.style.color = "#f04747";
+                msg.innerText = "Please connect Discord first!";
+                return;
+            }
 
             if (!codeInput.value) {
                 msg.style.color = "#f04747";
@@ -128,21 +180,19 @@
             }
 
             msg.style.color = "#ffffff";
-            msg.innerText = "Connecting to Bot...";
+            msg.innerText = "Processing...";
             btn.disabled = true;
-            btn.innerText = "PROCESSING...";
             
             try {
-                // UPDATE THIS URL EVERY TIME YOU RESTART NGROK
                 const response = await fetch('https://andre-battailous-sickerly.ngrok-free.dev/redeem', {
                     method: 'POST',
                     headers: { 
                         'Content-Type': 'application/json',
-                        'ngrok-skip-browser-warning': 'true' // Skips ngrok's "You are visiting..." page
+                        'ngrok-skip-browser-warning': 'true' 
                     },
                     body: JSON.stringify({ 
                         code: codeInput.value.trim(), 
-                        userId: testUserId 
+                        userId: userId 
                     })
                 });
 
@@ -150,36 +200,31 @@
 
                 if (response.ok && data.status === 'success') {
                     msg.style.color = "#43b581";
-                    msg.innerText = `Success! Received ${data.tier} tier.`;
+                    msg.innerText = `Success! Role added.`;
                     playEffects(data.tier);
-                    codeInput.value = ""; // Clear input on success
+                    codeInput.value = ""; 
                 } else {
                     msg.style.color = "#f04747";
                     msg.innerText = data.message || "Invalid or Used Code!";
                 }
             } catch (err) {
-                console.error(err);
                 msg.style.color = "#f04747";
-                msg.innerText = "Connection Error: Check Bot terminal/ngrok.";
+                msg.innerText = "Connection Error: Is the bot online?";
             } finally {
                 btn.disabled = false;
-                btn.innerText = "CLAIM REWARD";
             }
         }
 
         function playEffects(tier) {
             const card = document.getElementById('card');
-            card.classList.remove('shake'); // Reset shake
-
+            card.classList.remove('shake');
             if (tier === "Legendary") {
                 card.classList.add('shake');
                 confetti({ particleCount: 600, spread: 150, origin: { y: 0.6 }, colors: ['#ff0000', '#ffd700', '#ffffff'] });
             } else if (tier === "Epic") {
                 confetti({ particleCount: 300, colors: ['#9b59b6', '#ffffff'] });
-            } else if (tier === "Rare") {
-                confetti({ particleCount: 150, colors: ['#00aeff', '#ffffff'] });
             } else {
-                confetti({ particleCount: 100 });
+                confetti({ particleCount: 150 });
             }
         }
     </script>
