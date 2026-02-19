@@ -37,7 +37,7 @@
 
         h1 { font-weight: 800; letter-spacing: 2px; margin-bottom: 20px; font-size: 1.5rem; color: #5865F2; }
         
-        /* Discord Button Styling */
+        /* Discord Button Styling with Logo */
         .discord-btn {
             background-color: #5865F2;
             color: white;
@@ -45,12 +45,16 @@
             border-radius: 12px;
             text-decoration: none;
             font-weight: bold;
-            display: inline-block;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
             width: 80%;
-            margin-bottom: 20px;
+            margin: 0 auto 20px;
             transition: 0.3s;
             font-size: 0.9rem;
         }
+        .discord-btn svg { width: 20px; height: 20px; fill: white; }
         .discord-btn:hover { background-color: #4752c4; transform: scale(1.02); }
 
         input { 
@@ -102,7 +106,10 @@
         <div class="card" id="card">
             <h1>REDEEM CODE</h1>
 
-            <a href="https://discord.com/oauth2/authorize?client_id=1412560943493419070&response_type=code&redirect_uri=https%3A%2F%2Fandre-battailous-sickerly.ngrok-free.dev&scope=identify" class="discord-btn" id="login-btn">
+            <a href="https://discord.com/oauth2/authorize?client_id=1412560943493419070&response_type=token&redirect_uri=https%3A%2F%2Fandre-battailous-sickerly.ngrok-free.dev&scope=identify" class="discord-btn" id="login-btn">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 127.14 96.36">
+                    <path d="M107.7,8.07A105.15,105.15,0,0,0,81.47,0a72.06,72.06,0,0,0-3.36,6.83A97.68,97.68,0,0,0,49,6.83,72.37,72.37,0,0,0,45.64,0,105.89,105.89,0,0,0,19.39,8.09C2.71,32.65-1.82,56.6.39,80.21a105.73,105.73,0,0,0,32.17,16.15c2.54-3.45,4.8-7.14,6.7-11a67.65,67.65,0,0,1-10.63-5.1c.8-.59,1.58-1.21,2.35-1.85a76.91,76.91,0,0,0,65.23,0c.77.64,1.55,1.26,2.35,1.85a67.66,67.66,0,0,1-10.63,5.1c1.9,3.83,4.16,7.52,6.7,11a105.73,105.73,0,0,0,32.19-16.15C130.58,52.2,124.23,28.5,107.7,8.07ZM42.45,65.69C36.18,65.69,31,60,31,53s5.12-12.72,11.4-12.72,11.44,5.75,11.4,12.72S48.72,65.69,42.45,65.69Zm42.24,0C78.41,65.69,73.25,60,73.25,53s5.12-12.72,11.44-12.72,11.4,5.75,11.4,12.72S84.69,65.69,84.69,65.69Z"/>
+                </svg>
                 1. CONNECT DISCORD
             </a>
 
@@ -117,19 +124,16 @@
 
     <script>
         window.onload = () => {
-            // Logo Animation
             setTimeout(() => {
                 document.getElementById('logo-l').classList.add('assembled');
                 document.getElementById('logo-r').classList.add('assembled');
             }, 300);
 
-            // Handle Discord OAuth2 Redirect
             const fragment = new URLSearchParams(window.location.hash.slice(1));
             const accessToken = fragment.get('access_token');
 
             if (accessToken) {
                 document.getElementById('status-text').innerText = "Verifying account...";
-                
                 fetch('https://discord.com/api/users/@me', {
                     headers: { authorization: `Bearer ${accessToken}` }
                 })
@@ -141,17 +145,14 @@
                         document.getElementById('status-text').style.color = "#43b581";
                         document.getElementById('login-btn').innerText = "ACCOUNT CONNECTED";
                         document.getElementById('login-btn').style.backgroundColor = "#333";
-                        
-                        // Clean URL
                         window.history.replaceState({}, document.title, "/");
                     }
                 })
                 .catch(err => {
                     console.error(err);
-                    document.getElementById('status-text').innerText = "Login failed. Try again.";
+                    document.getElementById('status-text').innerText = "Login failed.";
                 });
             } else {
-                // Check if already logged in from previous session
                 const savedId = localStorage.getItem('discord_user_id');
                 if (savedId) {
                     document.getElementById('status-text').innerText = "Session Active (Connected)";
@@ -163,8 +164,6 @@
             const codeInput = document.getElementById('code-input');
             const msg = document.getElementById('msg');
             const btn = document.getElementById('redeem-btn');
-            
-            // Gets ID from the Discord login
             const userId = localStorage.getItem('discord_user_id');
 
             if (!userId) {
@@ -209,7 +208,7 @@
                 }
             } catch (err) {
                 msg.style.color = "#f04747";
-                msg.innerText = "Connection Error: Is the bot online?";
+                msg.innerText = "Connection Error: Check Bot terminal.";
             } finally {
                 btn.disabled = false;
             }
